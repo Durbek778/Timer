@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { View, StyleSheet, Text, Platform, Vibration } from "react-native";
 import { ProgressBar } from "react-native-paper";
 import { Countdown } from "../component/Countdown";
+import { useKeepAwake } from "expo-keep-awake";
 import { RoundedButton } from "../component/RoundedButton";
 import { spacing } from "../utils/sizes";
 import { colors } from "../utils/colors";
@@ -17,20 +18,28 @@ const PATTERN = [
   1 * ONE_SECOND_IN_MS,
 ];
 
-export const Timer = ({ focusSubject }) => {
+export const Timer = ({ focusSubject, clearSubject, onTimerEnd }) => {
+  useKeepAwake();
   const [isStarted, setIsStarted] = useState(false);
   const [progress, setProgress] = useState(1);
   const [minutes, setMinutes] = useState(0.1);
+
+  const onEnd = (reset) => {
+    Vibration.vibrate(PATTERN);
+    setIsStarted(false);
+    setProgress(1);
+    reset();
+    onTimerEnd(focusSubject);
+  };
 
   return (
     <View style={styles.container}>
       <View style={styles.countdown}>
         <Countdown
+          minutes={minutes}
           isPaused={!isStarted}
           onProgress={setProgress}
-          onEnd={() => {
-            Vibration.vibrate(PATTERN);
-          }}
+          onEnd={onEnd}
         />
         <View style={{ paddingTop: spacing.xxl }}>
           <Text style={styles.title}>Focusing on :</Text>
@@ -54,6 +63,9 @@ export const Timer = ({ focusSubject }) => {
         {isStarted && (
           <RoundedButton title="pause" onPress={() => setIsStarted(false)} />
         )}
+      </View>
+      <View style={styles.clearSubjectWrapper}>
+        <RoundedButton size={50} title="-" onPress={clearSubject} />
       </View>
     </View>
   );
@@ -79,6 +91,10 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     justifyContent: "center",
     alignItems: "center",
+  },
+  clearSubjectWrapper: {
+    flexDirection: "row",
+    justifyContent: "center",
   },
   title: {
     color: colors.white,
